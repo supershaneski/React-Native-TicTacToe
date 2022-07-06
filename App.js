@@ -16,9 +16,7 @@ const Routes = [
 export default function App() {
 
   const theme = useColorScheme()
-
-  console.log("theme", theme)
-
+  
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={theme}>
@@ -36,7 +34,7 @@ export default function App() {
                     headerStyle: {
                       backgroundColor: theme === 'dark' ? '#333' : '#F5F5F5',
                     },
-                    headerTintColor: theme === 'dark' ? '#FFF' : '#333',
+                    headerTintColor: theme === 'dark' ? '#666' : '#333',
                     headerTitleStyle: {
                       fontWeight: 'bold',
                     },
