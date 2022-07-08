@@ -5,7 +5,7 @@
  * @returns 
  */
 export const wait = (payload) => {
-    const delay = 1000 + Math.round(2000 * Math.random())
+    const delay = 1000 + Math.round(1000 * Math.random())
     return new Promise((resolve) => setTimeout(() => {
         resolve(payload)
     }, delay))

@@ -1,12 +1,15 @@
 import React from 'react'
 import { Dimensions, StyleSheet, View, Text, TouchableOpacity } from 'react-native'
-import ThemeContext from '../components/ThemeContext'
 import { useHeaderHeight } from '@react-navigation/elements'
-import useTheme from '../components/useTheme'
+import * as Localization from 'expo-localization'
 
+import ThemeContext from '../components/ThemeContext'
+import useTheme from '../components/useTheme'
+import useCaption from '../components/useCaption'
 import { wait, shuffle, getRandomInt } from '../lib/utils'
 
 const window = Dimensions.get('window')
+
 const paddingValue = 16
 const marginValue = 16
 
@@ -21,27 +24,42 @@ const lineGroups = [
     [2, 4, 6],
 ]
 
-const getTheWinner = (squares) => {
+const getWinner = (squares) => {
 
-    const lines = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6],
-    ]
-
-    for(let i = 0; i < lines.length; i++) {
-        const [a, b, c] = lines[i]
+    for(let i = 0; i < lineGroups.length; i++) {
+        const [a, b, c] = lineGroups[i]
         if(squares[a] > 0 && squares[a] === squares[b] && squares[a] === squares[c]) {
             return squares[a]
         }
     }
 
     return null
+}
+
+const getNextMove = (value, tiles) => {
+
+    for(let k = 0; k < lineGroups.length; k++) {
+
+        const [a, b, c] = lineGroups[k]
+
+        if(tiles[a] === value && tiles[b] === value && tiles[c] === 0) {
+            
+            return c
+
+        } else if(tiles[a] === value && tiles[c] === value && tiles[b] === 0) {
+            
+            return b
+        
+        } else if(tiles[b] === value && tiles[c] === value && tiles[a] === 0) {
+            
+            return a
+
+        }
+
+    }
+
+    return -1
+
 }
 
 const themeStyle = {
@@ -59,33 +77,27 @@ const themeStyle = {
     }
 }
 
-
 const runGameAI = (tiles) => {
     return wait(tiles)
 }
-
 
 const initialTiles = () => new Array(9).fill(0)
 
 export default function Screen({ navigation }) {
     
     const theme = React.useContext(ThemeContext)
+
     const mytheme = useTheme(themeStyle, theme)
+    const captions = useCaption(Localization.locale)
 
     const [tiles, setTiles] = React.useState(initialTiles)
-    
     const [dimensions, setDimensions] = React.useState({ window })
-    
     const headerHeight = useHeaderHeight()
 
     const [turn, toggleTurn] = React.useState(1)
-
     const [playState, setPlayState] = React.useState(0)
-
     const [gameOver, setGameOver] = React.useState(false)
     const [winner, setWinner] = React.useState(0)
-
-    const [selIndex, setSelIndex] = React.useState(-1)
 
     React.useEffect(() => {
 
@@ -108,6 +120,7 @@ export default function Screen({ navigation }) {
             procAgent(tiles)
 
         } else {
+
             setPlayState(0)
         }
     }, [turn])
@@ -119,20 +132,21 @@ export default function Screen({ navigation }) {
         toggleTurn(1)
         setWinner(0)
         setGameOver(false)
-        setSelIndex(-1)
-
-        console.log("--START--")
 
     }
 
-    const handleClick = (_index) => {
+    const handlePress = (index) => (e) => {
         
-        console.log("turn: "+turn, "state: " + playState)
-
-        if(gameOver) {
+        if(playState > 0 || gameOver) {
             return
         }
 
+        selectTile(index)
+
+    }
+
+    const selectTile = (_index) => {
+        
         let _tiles = tiles.slice(0)
 
         if(_tiles.find((item, index) => index === _index) > 0) {
@@ -149,10 +163,9 @@ export default function Screen({ navigation }) {
             }
         })
         
-        setSelIndex(_index)
         setTiles(_tiles)
 
-        const winner = getTheWinner(_tiles)
+        const winner = getWinner(_tiles)
 
         if(!winner) {
 
@@ -160,7 +173,6 @@ export default function Screen({ navigation }) {
             if(!blankTileExist) {
                 
                 setGameOver(true)
-
                 setPlayState(0)
 
             } else {
@@ -173,82 +185,63 @@ export default function Screen({ navigation }) {
 
             setWinner(winner)
             setGameOver(true)
-
             setPlayState(0)
 
         }
 
     }
 
-    const procAgent = (_tiles) => {
+    const procAgent = (gameTiles) => {
 
-        //console.log("Run Agent")
-
-        runGameAI(_tiles).then((_theTiles) => {
+        runGameAI(gameTiles).then((gameTiles) => {
             
-            const empty_tiles = _theTiles.map((item, index) => {
-                //console.log("-", item, index)
-                return {
-                    value: item,
-                    index: index,
-                }
-            }).filter(item => item.value === 0)
+            // find potential winning move
+            
+            let tileNo = getNextMove(2, gameTiles)
+            if(tileNo >= 0) {
 
-            const list = empty_tiles.map(item => item.index)
-
-            const groupMatch = lineGroups.filter(line => line.some(item => item === selIndex))
-            //console.log(selIndex, groupMatch)
-            let myindex = -1
-
-            for(let k = 0; k < groupMatch.length; k++) {
-                
-                const [a, b, c] = groupMatch[k]
-
-                if(a === selIndex) {
-                    if(_theTiles[a] === _theTiles[b] && _theTiles[c] === 0) {
-                        myindex = c
-                    } else if(_theTiles[a] === _theTiles[c] && _theTiles[b] === 0) {
-                        myindex = b
-                    }
-                } else if(b === selIndex) {
-                    if(_theTiles[b] === _theTiles[a] && _theTiles[c] === 0) {
-                        myindex = c
-                    } else if(_theTiles[b] === _theTiles[c] && _theTiles[a] === 0) {
-                        myindex = a
-                    }
-                } else {
-                    if(_theTiles[c] === _theTiles[a] && _theTiles[b] === 0) {
-                        myindex = b
-                    } else if(_theTiles[c] === _theTiles[b] && _theTiles[a] === 0) {
-                        myindex = a
-                    }
-                }
-
-                if(myindex >= 0) {
-                    break
-                }
-
-            }
-
-            if(myindex >= 0) {
-
-                handleClick(myindex)
+                selectTile(tileNo)
 
             } else {
 
-                const list2 = shuffle(list)
-                const index2 = getRandomInt(0, list2.length - 1)
+                // find player potential winning move
 
-                handleClick(list2[index2])
+                tileNo = getNextMove(1, gameTiles)
+                if(tileNo >= 0) {
+                    
+                    selectTile(tileNo)
+
+                } else {
+
+                    // empty tiles
+                    const list = gameTiles.map((value, index) => ({value, index}))
+                        .filter(item => item.value === 0)
+                        .map(item => item.index)
+
+                    const list2 = shuffle(list)
+                    const index2 = getRandomInt(0, list2.length - 1)
+
+                    selectTile(list2[index2])
+
+                }
 
             }
-            
-            
 
         }).catch(error => {
-            console.log("AI error", error)
+
+            console.warn(`[AI Error] ${error}`)
+            
             setPlayState(0)
+
         })
+
+    }
+
+    const winnerCaption = () => {
+
+        const winnerKey = winner === 1 ? 'X' : 'O'
+
+        return Localization.locale.indexOf("en") >= 0 ? `The winner is ${winnerKey}!` : `勝者は${winnerKey}です！`
 
     }
 
@@ -262,7 +255,7 @@ export default function Screen({ navigation }) {
     
     return (
         <View style={[styles.container, {
-            backgroundColor: mytheme('container'), //theme === 'dark' ? '#333' : '#f5f5f5',
+            backgroundColor: mytheme('container'),
         }]}>
             <View style={[styles.inner, {
                 margin: marginValue,
@@ -275,7 +268,11 @@ export default function Screen({ navigation }) {
                     {
                         tiles.map((item, index) => {
                             return (
-                                <TouchableOpacity activeOpacity={gameOver ? 1 : 0.5} onPress={() => handleClick(index)} key={index} style={[styles.tile, {
+                                <TouchableOpacity 
+                                activeOpacity={gameOver ? 1 : 0.5} 
+                                onPress={handlePress(index)}
+                                key={index} 
+                                style={[styles.tile, {
                                     width: tileSize,
                                     height: tileSize,
                                     backgroundColor: mytheme('tile'),
@@ -290,7 +287,7 @@ export default function Screen({ navigation }) {
                                 >
                                     <Text style={[styles.tileText,{
                                         fontSize: textSize,
-                                        color: mytheme('container'), //theme === 'dark' ? '#333' : '#f5f5f5',
+                                        color: mytheme('container'),
                                     }]}>{item === 0 ? '' : item === 1 ? 'X' : 'O'}</Text>
                                 </TouchableOpacity>
                             )
@@ -299,14 +296,18 @@ export default function Screen({ navigation }) {
                     {
                         gameOver &&
                         <View style={styles.gameOver}>
-                            <View style={styles.overlay}>
+                            <View style={styles.overlay}
+                            shadowOffset={{height: 1}}
+                            shadowColor='#000000'
+                            shadowOpacity={0.11}
+                            >
                                 <TouchableOpacity onPress={handleReset} style={[styles.gameOverButton, {
-                                    borderColor: mytheme('text'), //theme === 'dark' ? '#fff' : '#333',
-                                    backgroundColor: theme === 'dark' ? 'transparent' : '#fff',
+                                    borderColor: mytheme('text'),
+                                    backgroundColor: theme === 'dark' ? '#3339' : '#fff9',
                                 }]}>
-                                    <Text style={[styles.gameOverText, {
-                                        color: mytheme('text') //theme === 'dark' ? '#fff' : '#333'
-                                    }]}>Try Again?</Text>
+                                    <Text style={[styles.gameOverText, { color: mytheme('text') }]}>
+                                        { captions('game.again') }
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -317,20 +318,20 @@ export default function Screen({ navigation }) {
                     {
                         !gameOver &&
                         <Text style={[styles.text, {
-                            color: mytheme('text'), //theme === 'dark' ? '#fff' : '#333'
-                        }]}>Turn: {turn === 1 ? 'X' : 'O'} {playState > 0 ? ' wait...' : ''}</Text>
+                            color: mytheme('text'),
+                        }]}>{ captions('game.next') }: {turn === 1 ? 'X' : 'O'} {playState > 0 ? ` ${captions('game.wait')}` : ''}</Text>
                     }
                     {
                         (gameOver && winner > 0) &&
                         <Text style={[styles.text, {
-                            color: mytheme('text'), //theme === 'dark' ? '#fff' : '#333'
-                        }]}>Winner is {winner === 1 ? 'X' : 'O'}!</Text>
+                            color: mytheme('text'),
+                        }]}>{ winnerCaption() }</Text>
                     }
                     {
                         (gameOver && winner === 0) &&
                         <Text style={[styles.text, {
-                            color: mytheme('text'), //theme === 'dark' ? '#fff' : '#333'
-                        }]}>It's a tie!</Text>
+                            color: mytheme('text'),
+                        }]}>{ captions('game.draw')}</Text>
                     }
                 </View>
             </View>
@@ -342,7 +343,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    
     inner: {
         flex: 1,
     },
@@ -360,7 +360,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap'
     },  
     tile: {
-        //backgroundColor: '#344',
         marginRight: 2,
         marginBottom: 2,
         justifyContent: 'center',
@@ -368,12 +367,10 @@ const styles = StyleSheet.create({
     },
     tileText: {
         fontWeight: 'bold',
-        //color: '#333',
     },
     text: {
         fontWeight: 'bold',
         fontSize: 20,
-        //color: '#fff'
     },
     gameOver: {
         position: 'absolute',
@@ -383,7 +380,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     gameOverButton: {
-        borderWidth: 2,
+        borderWidth: 0.5,
         borderColor: '#fff',
         padding: 10,
         borderRadius: 12,
@@ -395,6 +392,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     overlay: {
+        borderRadius: 12,
         width: '40%',
     }
 })

@@ -1,0 +1,12 @@
+{
+    "about": {
+        "close": "閉じる", 
+        "description": "React-NativeとExpoを使用して作成されたサンプルアプリです。"
+    },
+    "game": {
+        "again": "再びプレイ",
+        "next": "次のターン",
+        "wait": "待って...",
+        "draw": "それは引き分けです!"
+    }
+}

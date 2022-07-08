@@ -1,0 +1,12 @@
+{
+    "about": {
+        "close": "Close", 
+        "description": "A sample app created using React-Native and Expo."
+    },
+    "game": {
+        "again": "Play Again",
+        "next": "Next Turn",
+        "wait": "wait...",
+        "draw": "It's a draw!"
+    }
+}

@@ -24,7 +24,12 @@ The main objective of this project is to get familiar using React Native.
 
 * Game AI
 
-   Added a bot to play with :)
+   Added a bot to play with :) Improved the bot's AI.
+
+* Localization
+
+   Can now display English and Japanese captions depending on the device's language setting.
+   Created a custom hook to load localized captions because the first implementation I found from the web is buggy and the workaround is much more work.
    
 
 ### Methods
